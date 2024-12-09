@@ -7,6 +7,7 @@ import {
   X,
   Loader,
   Calendar,
+  Upload,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -23,6 +24,7 @@ const ContentFeed = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -50,6 +52,51 @@ const ContentFeed = () => {
       console.error("Posts fetch error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File size too large. Maximum size is 5MB.");
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith("image/")) {
+      setError("Only image files are allowed.");
+      return;
+    }
+
+    setUploadingImage(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          "x-auth-token": localStorage.getItem("token"),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      setSelectedMedia(data.fileUrl);
+    } catch (err) {
+      console.error("Upload error:", err);
+      setError("Failed to upload image");
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -130,15 +177,6 @@ const ContentFeed = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   const handleDelete = async (postId) => {
     try {
       const response = await fetch(`/api/posts/${postId}`, {
@@ -156,6 +194,19 @@ const ContentFeed = () => {
     } catch (err) {
       console.error("Delete error:", err);
     }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedMedia("");
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   return (
@@ -177,15 +228,20 @@ const ContentFeed = () => {
               rows="3"
             />
 
-            {/* Media URL Input */}
+            {/* Image Preview */}
             {selectedMedia && (
-              <div className="mt-3">
+              <div className="mt-3 relative">
                 <img
                   src={selectedMedia}
-                  alt="Post media"
+                  alt="Post preview"
                   className="max-h-64 rounded-lg object-cover"
-                  onError={() => setSelectedMedia("")}
                 />
+                <button
+                  onClick={removeSelectedImage}
+                  className="absolute top-2 right-2 p-1 bg-gray-900/50 rounded-full text-white hover:bg-gray-900/75"
+                >
+                  <X size={16} />
+                </button>
               </div>
             )}
 
@@ -235,15 +291,27 @@ const ContentFeed = () => {
               <div className="flex gap-1">
                 <div className="relative">
                   <input
-                    type="url"
-                    placeholder="Image URL"
-                    className="absolute bottom-full mb-2 left-0 w-64 px-3 py-1 text-sm bg-white border border-gray-200 rounded-lg shadow-sm focus:ring-1 focus:ring-violet-500 hidden group-focus-within:block"
-                    value={selectedMedia}
-                    onChange={(e) => setSelectedMedia(e.target.value)}
+                    type="file"
+                    id="image-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
                   />
-                  <button className="p-2 text-gray-400 hover:text-violet-500 rounded-lg group">
-                    <Image size={20} />
-                  </button>
+                  <label
+                    htmlFor="image-upload"
+                    className={`p-2 rounded-lg cursor-pointer flex items-center ${
+                      uploadingImage
+                        ? "text-gray-400"
+                        : "text-gray-400 hover:text-violet-500"
+                    }`}
+                  >
+                    {uploadingImage ? (
+                      <Loader className="animate-spin" size={20} />
+                    ) : (
+                      <Image size={20} />
+                    )}
+                  </label>
                 </div>
                 <button className="p-2 text-gray-400 hover:text-violet-500 rounded-lg">
                   <Smile size={20} />
@@ -251,7 +319,11 @@ const ContentFeed = () => {
               </div>
               <button
                 onClick={handlePost}
-                disabled={submitting || (!newPost.trim() && !selectedMedia)}
+                disabled={
+                  submitting ||
+                  (!newPost.trim() && !selectedMedia) ||
+                  uploadingImage
+                }
                 className="px-4 py-2 bg-violet-500 text-white text-sm font-medium rounded-lg hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {submitting ? (
@@ -265,7 +337,11 @@ const ContentFeed = () => {
               </button>
             </div>
 
-            {error && <div className="mt-3 text-sm text-red-500">{error}</div>}
+            {error && (
+              <div className="mt-3 text-sm text-red-500 bg-red-50 p-2 rounded-lg">
+                {error}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -290,7 +366,7 @@ const ContentFeed = () => {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{post.name}</span>
                       <span className="text-gray-500 text-sm">
-                        {post.handle}
+                        @{post.handle}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-500">

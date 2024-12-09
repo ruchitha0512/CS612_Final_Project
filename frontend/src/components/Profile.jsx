@@ -6,7 +6,7 @@ const DEFAULT_AVATAR =
   "https://www.creativefabrica.com/wp-content/uploads/2023/04/15/Cute-Cat-Kawaii-Chibi-Graphic-67307453-1.png";
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,6 +20,7 @@ const Profile = () => {
   });
 
   useEffect(() => {
+    console.log("Current user:", user); // Debug log
     fetchProfile();
   }, [user]);
 
@@ -27,6 +28,7 @@ const Profile = () => {
     if (!user?.handle) return;
 
     try {
+      console.log("Fetching profile for handle:", user.handle); // Debug log
       const response = await fetch(`/api/users/${user.handle}`, {
         headers: {
           "x-auth-token": localStorage.getItem("token"),
@@ -38,7 +40,15 @@ const Profile = () => {
       }
 
       const data = await response.json();
-      setProfile(data);
+      console.log("Fetched profile data:", data); // Debug log
+
+      // Ensure we have an avatar
+      const profileData = {
+        ...data,
+        avatar: data.avatar || DEFAULT_AVATAR,
+      };
+
+      setProfile(profileData);
     } catch (err) {
       setError("Failed to load profile data");
       console.error("Profile fetch error:", err);
@@ -50,6 +60,8 @@ const Profile = () => {
     setError("");
 
     try {
+      console.log("Saving profile with data:", profile); // Debug log
+
       // Update profile info
       const profileResponse = await fetch("/api/profile", {
         method: "PUT",
@@ -69,6 +81,8 @@ const Profile = () => {
 
       // If avatar was changed, update it separately
       if (profile.avatar !== user.avatar) {
+        console.log("Updating avatar:", profile.avatar); // Debug log
+
         const avatarResponse = await fetch("/api/profile/avatar", {
           method: "PUT",
           headers: {
@@ -76,13 +90,16 @@ const Profile = () => {
             "x-auth-token": localStorage.getItem("token"),
           },
           body: JSON.stringify({
-            avatar: profile.avatar,
+            avatar: profile.avatar || DEFAULT_AVATAR,
           }),
         });
 
         if (!avatarResponse.ok) {
           throw new Error("Failed to update avatar");
         }
+
+        // Update the user context with new avatar
+        updateUser({ avatar: profile.avatar || DEFAULT_AVATAR });
       }
 
       setIsEditing(false);
@@ -96,6 +113,7 @@ const Profile = () => {
   };
 
   const handleEdit = (field, value) => {
+    console.log("Editing field:", field, "value:", value); // Debug log
     setProfile((prev) => ({
       ...prev,
       [field]: value,
@@ -103,10 +121,15 @@ const Profile = () => {
   };
 
   const handleAvatarError = () => {
+    console.log("Avatar load error, using default"); // Debug log
     setProfile((prev) => ({
       ...prev,
       avatar: DEFAULT_AVATAR,
     }));
+  };
+
+  const getDisplayAvatar = () => {
+    return profile.avatar || DEFAULT_AVATAR;
   };
 
   return (
@@ -116,7 +139,7 @@ const Profile = () => {
         <div className="flex items-center gap-4">
           <div className="relative group">
             <img
-              src={profile.avatar}
+              src={getDisplayAvatar()}
               alt={profile.name}
               className="w-24 h-24 rounded-full border-2 border-violet-100 object-cover"
               onError={handleAvatarError}
@@ -151,7 +174,7 @@ const Profile = () => {
             ) : (
               <h1 className="text-xl font-bold">{profile.name}</h1>
             )}
-            <p className="text-gray-500">{profile.handle}</p>
+            <p className="text-gray-500">@{profile.handle}</p>
           </div>
         </div>
         <button

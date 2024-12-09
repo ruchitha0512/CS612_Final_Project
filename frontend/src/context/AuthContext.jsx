@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useContext } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const AuthContext = createContext(null);
 
@@ -6,97 +7,94 @@ const DEFAULT_AVATAR =
   "https://www.creativefabrica.com/wp-content/uploads/2023/04/15/Cute-Cat-Kawaii-Chibi-Graphic-67307453-1.png";
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  const queryClient = useQueryClient();
 
-  const checkAuth = async () => {
-    const token = localStorage.getItem("token");
+  // Auth query to check user session
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["auth"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-    if (!token) {
-      setLoading(false);
-      setInitialized(true);
-      return;
-    }
+      if (!token) {
+        return null;
+      }
 
-    try {
-      const response = await fetch("/api/users/me", {
-        headers: {
-          "x-auth-token": token,
-        },
-      });
+      try {
+        // Use stored user data while validating
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          console.log("Using stored user data:", parsedUser); // Debug log
+          queryClient.setQueryData(["auth"], parsedUser);
+        }
 
-      if (response.ok) {
+        const response = await fetch("/api/users/me", {
+          headers: {
+            "x-auth-token": token,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Invalid token");
+        }
+
         const userData = await response.json();
-        setUser({
+        console.log("Received user data from API:", userData); // Debug log
+
+        // Keep the existing avatar if it exists, otherwise use the provided one or default
+        const updatedUser = {
           ...userData,
           avatar: userData.avatar || DEFAULT_AVATAR,
-        });
-      } else {
-        // Clear invalid token
-        localStorage.removeItem("token");
-        setUser(null);
+        };
+
+        console.log("Updated user data:", updatedUser); // Debug log
+
+        // Update stored user data
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        return updatedUser;
+      } catch (error) {
+        console.error("Auth error:", error); // Debug log
+        if (error.message !== "Failed to fetch") {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+        }
+        return null;
       }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-      // Don't remove token on network errors to prevent unnecessary logouts
-      if (error.message !== "Failed to fetch") {
-        localStorage.removeItem("token");
-        setUser(null);
-      }
-    } finally {
-      setLoading(false);
-      setInitialized(true);
-    }
-  };
+    },
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Keep data in cache for 10 minutes
+    retry: false,
+  });
 
-  useEffect(() => {
-    // Set initial user state from localStorage if available
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-
-    if (token && storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (e) {
-        console.error("Failed to parse stored user data");
-      }
-    }
-
-    checkAuth();
-  }, []);
-
-  const login = (data) => {
+  const login = async (data) => {
     try {
+      console.log("Login data received:", data); // Debug log
+
       if (!data || !data.token) {
         throw new Error("Invalid login data");
       }
 
-      // Set token
       localStorage.setItem("token", data.token);
 
-      // Set user data
       const userData = {
         id: data.user.id,
         name: data.user.name,
         handle: data.user.handle,
-        avatar: data.user.avatar || DEFAULT_AVATAR,
+        avatar: data.user.avatar,
         email: data.user.email,
+        bio: data.user.bio,
       };
 
-      // Store user data in localStorage
+      console.log("Storing user data:", userData); // Debug log
+
       localStorage.setItem("user", JSON.stringify(userData));
-
-      // Update state
-      setUser(userData);
-
+      queryClient.setQueryData(["auth"], userData);
       return true;
     } catch (error) {
       console.error("Login error:", error);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      setUser(null);
+      queryClient.setQueryData(["auth"], null);
       return false;
     }
   };
@@ -104,27 +102,35 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setUser(null);
+    queryClient.setQueryData(["auth"], null);
+    // Invalidate all queries on logout
+    queryClient.clear();
   };
 
   const updateUser = (userData) => {
-    const updatedUser = { ...user, ...userData };
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    setUser(updatedUser);
-  };
+    console.log("Updating user with:", userData); // Debug log
 
-  if (!initialized) {
-    return null;
-  }
+    const currentUser = queryClient.getQueryData(["auth"]);
+    const updatedUser = {
+      ...currentUser,
+      ...userData,
+      // Ensure avatar persists unless explicitly changed
+      avatar: userData.avatar || currentUser?.avatar || DEFAULT_AVATAR,
+    };
+
+    console.log("Updated user state:", updatedUser); // Debug log
+
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+    queryClient.setQueryData(["auth"], updatedUser);
+  };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        loading,
+        loading: isLoading,
         login,
         logout,
-        checkAuth,
         updateUser,
         isAuthenticated: !!user,
       }}
@@ -141,3 +147,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

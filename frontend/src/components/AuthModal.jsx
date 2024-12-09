@@ -11,8 +11,9 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
     password: "",
     handle: "",
     bio: "",
-    avatar: DEFAULT_AVATAR,
+    avatar: "",
   });
+  const [previewError, setPreviewError] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -24,9 +25,10 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
         password: "",
         handle: "",
         bio: "",
-        avatar: DEFAULT_AVATAR,
+        avatar: "",
       });
       setError("");
+      setPreviewError(false);
     }
   }, [isOpen, isSignUp]);
 
@@ -48,13 +50,15 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
             email: formData.email,
             password: formData.password,
             handle: formData.handle,
-            bio: formData.bio || "",
-            avatar: formData.avatar || DEFAULT_AVATAR,
+            bio: formData.bio,
+            avatar: formData.avatar.trim() || DEFAULT_AVATAR,
           }
         : {
             email: formData.email,
             password: formData.password,
           };
+
+      console.log("Submitting form with data:", body); // Debug log
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -93,14 +97,6 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    if (name === "avatar" && !value.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        avatar: DEFAULT_AVATAR,
-      }));
-      return;
-    }
-
     if (name === "handle") {
       const sanitizedValue = value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
       setFormData((prev) => ({
@@ -110,6 +106,10 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
       return;
     }
 
+    if (name === "avatar") {
+      setPreviewError(false); // Reset error state when new URL is entered
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -117,10 +117,15 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
   };
 
   const handleAvatarError = () => {
-    setFormData((prev) => ({
-      ...prev,
-      avatar: DEFAULT_AVATAR,
-    }));
+    console.log("Avatar preview failed to load");
+    setPreviewError(true);
+  };
+
+  const getDisplayAvatar = () => {
+    if (previewError || !formData.avatar.trim()) {
+      return DEFAULT_AVATAR;
+    }
+    return formData.avatar;
   };
 
   const validateForm = () => {
@@ -281,11 +286,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
                       type="url"
                       placeholder="https://example.com/your-image.jpg"
                       className="w-full rounded-lg border border-gray-300 pl-10 py-2 text-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                      value={
-                        formData.avatar === DEFAULT_AVATAR
-                          ? ""
-                          : formData.avatar
-                      }
+                      value={formData.avatar}
                       onChange={handleInputChange}
                       maxLength={255}
                     />
@@ -293,16 +294,23 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
                   <div className="mt-2 flex items-center space-x-2">
                     <div className="h-10 w-10 rounded-full overflow-hidden border border-gray-200">
                       <img
-                        src={formData.avatar}
+                        key={formData.avatar} // Add key to force re-render on URL change
+                        src={getDisplayAvatar()}
                         alt="Profile preview"
                         className="h-full w-full object-cover"
                         onError={handleAvatarError}
                       />
                     </div>
                     <span className="text-sm text-gray-500">
-                      {formData.avatar === DEFAULT_AVATAR
-                        ? "Default avatar"
-                        : "Preview"}
+                      {previewError ? (
+                        <span className="text-red-500">
+                          Invalid image URL, using default
+                        </span>
+                      ) : formData.avatar.trim() ? (
+                        "Preview"
+                      ) : (
+                        "Default avatar"
+                      )}
                     </span>
                   </div>
                 </div>
