@@ -182,4 +182,4 @@ The application will be available at `http://localhost:5173`
 
 ### Backend
 
-- `node server.js` - Start the server
+- `npm start` - Start the server
