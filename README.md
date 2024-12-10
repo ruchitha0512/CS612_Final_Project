@@ -9,7 +9,6 @@ A full-stack social media application built with React, Node.js, Express, and My
 - 🖼️ Image upload functionality
 - 💟 Like and comment on posts
 - 🏷️ Tag system for posts
-- 🔍 Search functionality
 - 📱 Responsive design
 - 👤 User profiles
 - 📊 Trending tags
