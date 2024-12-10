@@ -9,7 +9,6 @@ const SearchBar = ({ posts, setPosts }) => {
     setSearchQuery(query);
 
     if (!query.trim()) {
-      // Reset the filtered posts when search is cleared
       setPosts(posts.filter((post) => !post.isFiltered));
       return;
     }

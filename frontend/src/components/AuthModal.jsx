@@ -58,7 +58,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
             password: formData.password,
           };
 
-      console.log("Submitting form with data:", body); // Debug log
+      console.log("Submitting form with data:", body);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -107,7 +107,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
     }
 
     if (name === "avatar") {
-      setPreviewError(false); // Reset error state when new URL is entered
+      setPreviewError(false);
     }
 
     setFormData((prev) => ({
@@ -294,7 +294,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, isSignUp }) => {
                   <div className="mt-2 flex items-center space-x-2">
                     <div className="h-10 w-10 rounded-full overflow-hidden border border-gray-200">
                       <img
-                        key={formData.avatar} // Add key to force re-render on URL change
+                        key={formData.avatar}
                         src={getDisplayAvatar()}
                         alt="Profile preview"
                         className="h-full w-full object-cover"

@@ -20,7 +20,7 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    console.log("Current user:", user); // Debug log
+    console.log("Current user:", user);
     fetchProfile();
   }, [user]);
 
@@ -28,7 +28,7 @@ const Profile = () => {
     if (!user?.handle) return;
 
     try {
-      console.log("Fetching profile for handle:", user.handle); // Debug log
+      console.log("Fetching profile for handle:", user.handle);
       const response = await fetch(`/api/users/${user.handle}`, {
         headers: {
           "x-auth-token": localStorage.getItem("token"),
@@ -40,9 +40,8 @@ const Profile = () => {
       }
 
       const data = await response.json();
-      console.log("Fetched profile data:", data); // Debug log
+      console.log("Fetched profile data:", data);
 
-      // Ensure we have an avatar
       const profileData = {
         ...data,
         avatar: data.avatar || DEFAULT_AVATAR,
@@ -60,9 +59,8 @@ const Profile = () => {
     setError("");
 
     try {
-      console.log("Saving profile with data:", profile); // Debug log
+      console.log("Saving profile with data:", profile);
 
-      // Update profile info
       const profileResponse = await fetch("/api/profile", {
         method: "PUT",
         headers: {
@@ -79,9 +77,8 @@ const Profile = () => {
         throw new Error("Failed to update profile");
       }
 
-      // If avatar was changed, update it separately
       if (profile.avatar !== user.avatar) {
-        console.log("Updating avatar:", profile.avatar); // Debug log
+        console.log("Updating avatar:", profile.avatar);
 
         const avatarResponse = await fetch("/api/profile/avatar", {
           method: "PUT",
@@ -98,12 +95,11 @@ const Profile = () => {
           throw new Error("Failed to update avatar");
         }
 
-        // Update the user context with new avatar
         updateUser({ avatar: profile.avatar || DEFAULT_AVATAR });
       }
 
       setIsEditing(false);
-      await fetchProfile(); // Refresh profile data
+      await fetchProfile();
     } catch (err) {
       setError("Failed to update profile");
       console.error("Profile update error:", err);
@@ -113,7 +109,7 @@ const Profile = () => {
   };
 
   const handleEdit = (field, value) => {
-    console.log("Editing field:", field, "value:", value); // Debug log
+    console.log("Editing field:", field, "value:", value);
     setProfile((prev) => ({
       ...prev,
       [field]: value,
@@ -121,7 +117,7 @@ const Profile = () => {
   };
 
   const handleAvatarError = () => {
-    console.log("Avatar load error, using default"); // Debug log
+    console.log("Avatar load error, using default");
     setProfile((prev) => ({
       ...prev,
       avatar: DEFAULT_AVATAR,
@@ -134,7 +130,6 @@ const Profile = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      {/* Profile Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <div className="relative group">
@@ -193,14 +188,12 @@ const Profile = () => {
         </button>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="mb-4 p-3 bg-red-50 text-red-500 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      {/* Bio */}
       <div className="mb-6">
         {isEditing ? (
           <textarea
@@ -214,7 +207,6 @@ const Profile = () => {
         )}
       </div>
 
-      {/* Stats */}
       <div className="flex gap-6 py-4 border-t border-gray-100">
         <div className="text-center">
           <span className="block text-2xl font-bold text-violet-600">
