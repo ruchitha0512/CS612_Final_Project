@@ -170,7 +170,6 @@ The application will be available at `http://localhost:5173`
 4. Create posts with text, images, and tags
 5. Interact with posts through likes and comments
 6. View and edit your profile
-7. Search for posts and content
 
 ## Available Scripts
 
