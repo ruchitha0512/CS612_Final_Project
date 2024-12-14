@@ -81,6 +81,7 @@ function App() {
     setActiveTab("home");
   };
 
+  // Show loading screen while checking authentication
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -174,8 +175,10 @@ function App() {
         </div>
       </nav>
 
+      {/* Main Content */}
       <div className="max-w-screen-xl mx-auto px-4 pt-16">
         <div className="flex gap-6">
+          {/* Left Sidebar */}
           <aside className="hidden md:block w-56 fixed">
             <div className="space-y-1 pt-4">
               <NavItem icon={Home} label="Home" id="home" />
@@ -185,6 +188,7 @@ function App() {
             </div>
           </aside>
 
+          {/* Main Feed */}
           <main className="flex-1 md:ml-56 max-w-xl mx-auto">
             {!isAuthenticated ? (
               <div className="bg-white rounded-xl shadow-sm p-8 text-center">
@@ -225,6 +229,7 @@ function App() {
             )}
           </main>
 
+          {/* Right Sidebar */}
           {isAuthenticated && (
             <aside className="hidden lg:block w-72">
               <div className="bg-white rounded-xl shadow-sm p-4">
@@ -265,6 +270,7 @@ function App() {
         </div>
       </div>
 
+      {/* Mobile Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100">
         <div className="flex justify-around py-2">
           <NavItem icon={Home} id="home" />
@@ -272,6 +278,7 @@ function App() {
         </div>
       </nav>
 
+      {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}

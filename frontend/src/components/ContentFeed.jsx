@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Image,
@@ -21,6 +22,7 @@ const ContentFeed = () => {
   const [newTag, setNewTag] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedMedia, setSelectedMedia] = useState("");
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -59,11 +61,13 @@ const ContentFeed = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       setError("File size too large. Maximum size is 5MB.");
       return;
     }
 
+    // Check file type
     if (!file.type.startsWith("image/")) {
       setError("Only image files are allowed.");
       return;
@@ -209,6 +213,7 @@ const ContentFeed = () => {
 
   return (
     <div className="max-w-2xl mx-auto px-4">
+      {/* Post Creation */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
         <div className="flex gap-3">
           <img
@@ -225,6 +230,7 @@ const ContentFeed = () => {
               rows="3"
             />
 
+            {/* Image Preview */}
             {selectedMedia && (
               <div className="mt-3 relative">
                 <img
@@ -241,6 +247,7 @@ const ContentFeed = () => {
               </div>
             )}
 
+            {/* Tag Input */}
             <div className="mt-3">
               <form onSubmit={handleAddTag} className="flex gap-2">
                 <input
@@ -259,6 +266,7 @@ const ContentFeed = () => {
               </form>
             </div>
 
+            {/* Selected Tags */}
             {selectedTags.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {selectedTags.map((tag) => (
@@ -280,6 +288,7 @@ const ContentFeed = () => {
               </div>
             )}
 
+            {/* Action Buttons */}
             <div className="mt-3 flex items-center justify-between">
               <div className="flex gap-1">
                 <div className="relative">
@@ -339,6 +348,7 @@ const ContentFeed = () => {
         </div>
       </div>
 
+      {/* Posts Feed */}
       {loading ? (
         <div className="flex justify-center py-8">
           <Loader className="animate-spin text-violet-500" size={32} />
@@ -404,6 +414,7 @@ const ContentFeed = () => {
                         {post.comments_count || 0}
                       </span>
                     </button>
+                    
                     <button
                       onClick={() => handleLike(post.id)}
                       className={`group flex items-center gap-2 ${
